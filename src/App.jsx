@@ -7,33 +7,42 @@ class App extends Component {
     super(props);
     this.state = {
       currentUser: {name: "Bob"},
-      messages: [
-        {
-          id: 1,
-          username: "Bob",
-          content: "Has anyone seen my marbles?"
-        },
-        {
-          id: 2,
-          username: "Anonymous",
-          content: "No, I think you lost them. You lost your marbles Bob. You lost them for good."
-        }
-      ]
+      messages: []
     };
+
     this.newMessage = this.newMessage.bind(this);
   }
 
   newMessage (newContent) {
-    let messages = this.state.messages;
-    let newMsg = messages.concat({
-      id: messages[messages.length - 1].id + 1,
+    // let messages = this.state.messages;
+    let newMsg = ({
       username: this.state.currentUser.name,
       content: newContent
     })
-    this.setState({messages: newMsg});
+    this.socket.send(JSON.stringify(newMsg))
+    // this.setState({messages: newMsg});
+  }
+
+  updateMessages(newMessage) {
+    const messages = this.state.messages.concat(newMessage)
+    this.setState({messages: messages});
   }
 
   componentDidMount() {
+  // Open a connection
+  this.socket = new WebSocket('ws://localhost:3001/');
+
+  // When a connection is made...
+  this.socket.onopen = () => {
+    console.log('Connected to server');
+    const updateMessage = this.updateMessages.bind(this);
+    this.socket.onmessage = function(event){
+      // console.log(JSON.parse(e.data));
+      updateMessage(JSON.parse(event.data));
+    }
+  }
+
+
   console.log("componentDidMount <App />");
   setTimeout(() => {
     console.log("Simulating incoming message");
