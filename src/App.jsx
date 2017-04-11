@@ -6,11 +6,12 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      currentUser: {name: "Bob"},
+      currentUser: {name: 'Anonymous'},
       messages: []
     };
 
     this.newMessage = this.newMessage.bind(this);
+    this.newUser = this.newUser.bind(this);
   }
 
   newMessage (newContent) {
@@ -21,6 +22,14 @@ class App extends Component {
     })
     this.socket.send(JSON.stringify(newMsg))
     // this.setState({messages: newMsg});
+  }
+
+  newUser (name) {
+    // let newName = {
+    //   username: name
+    // }
+    // this.socket.send(JSON.stringify(newName))
+    this.setState({ currentUser: {name}});
   }
 
   updateMessages(newMessage) {
@@ -64,7 +73,7 @@ class App extends Component {
         <a href="/" className="navbar-brand">Chatty</a>
       </nav>
        <MessageList messages={this.state.messages} />
-       <ChatBar currentUser={this.state.currentUser.name} newMessage={this.newMessage} />
+       <ChatBar currentUser={this.state.currentUser.name} newMessage={this.newMessage} newUser={this.newUser}/>
       </div>
     );
   }
