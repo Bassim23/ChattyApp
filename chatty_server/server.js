@@ -4,6 +4,9 @@ const WebSocket = require('ws');
 const http = require('http');
 const uuidV1 = require('uuid/v1');
 
+const TYPES = require('./message_types.js');
+
+
 // Set the port to 3001
 const PORT = 3001;
 
@@ -19,22 +22,69 @@ const wss = new SocketServer({ server });
 wss.broadcast = function broadcast(data) {
   wss.clients.forEach(function each(client) {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(data);
+      client.send(JSON.stringify(data));
     }
   });
 };
 // Set up a callback that will run when a client connects to the server
 // When a client connects they are assigned a socket, represented by
 // the ws parameter in the callback.
-wss.on('connection', (ws) => {
+
+function broadcastUserCount() {
+  wss.broadcast({
+    id: uuidV1(),
+    type: TYPES.USER_COUNT,
+    userCount: wss.clients.size
+  });
+}
+
+function broadcastMessage(username, content)
+{
+  wss.broadcast({
+    id: uuidV1(),
+    type: TYPES.INCOMING_MESSAGE,
+    username: username,
+    content: content
+  });
+}
+
+function broadcastNotification(content)
+{
+  wss.broadcast({
+    id: uuidV1(),
+    type: TYPES.INCOMING_NOTIFICATION,
+    content
+  });
+}
+
+wss.on('connection', (client) => {
   console.log('Client connected');
 
-  ws.on('message', function incoming(message) {
-    const messageObject = JSON.parse(message);
-    console.log("User " +messageObject.username + " said " + messageObject.content);
-    wss.broadcast(JSON.stringify({id: uuidV1(), username: messageObject.username, content: messageObject.content}));
+  broadcastUserCount();
+  broadcastNotification('User connected');
+
+  client.on('message', function incoming(data) {
+    const message = JSON.parse(data);
+
+    // console.log(message);
+
+    if(message.content && message.username) {
+      broadcastMessage(message.username, message.content);
+    } else if (message.oldUsername && message.newUsername) {
+      client.username = message.newUsername;
+      broadcastNotification(`User ${message.oldUsername} changed their name to ${message.newUsername}`)
+    }
+
+
+    // console.log("User " +messageObject.username + " said " + messageObject.content);
+
   })
 
   // Set up a callback for when a client closes the socket. This usually means they closed their browser.
-  ws.on('close', () => console.log('Client disconnected'));
+  client.on('close', () => {
+    broadcastUserCount();
+    broadcastNotification(`User ${client.username} disconnected`);
+    console.log('Client disconnected');
+  });
+
 });
