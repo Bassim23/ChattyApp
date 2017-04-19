@@ -58,6 +58,7 @@ function broadcastNotification(content)
 }
 
 wss.on('connection', (client) => {
+  client.username = 'Anonymous'
   console.log('Client connected');
 
   broadcastUserCount();
@@ -74,9 +75,6 @@ wss.on('connection', (client) => {
       client.username = message.newUsername;
       broadcastNotification(`User ${message.oldUsername} changed their name to ${message.newUsername}`)
     }
-
-
-    // console.log("User " +messageObject.username + " said " + messageObject.content);
 
   })
 
